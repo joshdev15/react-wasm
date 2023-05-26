@@ -1,6 +1,7 @@
 La estructura del proyecto quedará así:
 
 .
+├── DOCS.md
 ├── README.md
 ├── package.json
 ├── public
@@ -9,7 +10,6 @@ La estructura del proyecto quedará así:
 │   └── wasm_exec.js
 ├── src
 │   ├── index.jsx
-│   ├── logo.svg
 │   ├── pages
 │   │   └── Home.jsx
 │   └── styles

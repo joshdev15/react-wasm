@@ -24,8 +24,8 @@ const Home = () => {
     const aParsed = parseInt(aValue.current.value)
     const bParsed = parseInt(bValue.current.value)
 
-    // setResult(window.sum(aParsed, bParsed))
-    setResult(window.asyncSum(aParsed, bParsed))
+    setResult(window.sum(aParsed, bParsed))
+    // setResult(window.asyncSum(aParsed, bParsed))
 
     setShowRes(true)
   }

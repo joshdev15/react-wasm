@@ -1,38 +1,48 @@
-import { useRef, useState } from 'react'
+import { useRef, useState } from "react";
 
 const Home = () => {
-  const [showErr, setShowErr] = useState(false)
-  const [showRes, setShowRes] = useState(false)
-  const [result, setResult] = useState()
-  const aValue = useRef()
-  const bValue = useRef()
+  const [showErr, setShowErr] = useState(false);
+  const [showRes, setShowRes] = useState(false);
+  const [result, setResult] = useState();
+  const aValue = useRef();
+  const bValue = useRef();
 
-  const onSubmit = e => {
-    e.preventDefault()
+  const calculate = async (a, b) => {
+    return window.asyncSum(a, b);
+  };
 
-    const aIsNaN = isNaN(aValue.current.value)
-    const bIsNaN = isNaN(bValue.current.value)
+  const onSubmit = async (e) => {
+    e.preventDefault();
+
+    const aIsNaN = isNaN(aValue.current.value);
+    const bIsNaN = isNaN(bValue.current.value);
 
     if (aIsNaN || bIsNaN) {
-      setShowErr(true)
+      setShowErr(true);
       setTimeout(() => {
-        setShowErr(false)
-      }, 3000)
-      return
+        setShowErr(false);
+      }, 3000);
+      return;
     }
 
-    const aParsed = parseInt(aValue.current.value)
-    const bParsed = parseInt(bValue.current.value)
+    const aParsed = parseInt(aValue.current.value);
+    const bParsed = parseInt(bValue.current.value);
 
-    setResult(window.sum(aParsed, bParsed))
-    // setResult(window.asyncSum(aParsed, bParsed))
+    // setResult(window.sum(aParsed, bParsed))
 
-    setShowRes(true)
-  }
+    calculate(aParsed, bParsed).then((res) => {
+      console.log(res);
+      setResult(res);
+      setShowRes(true);
+    });
+
+    console.log("Hola gente");
+    // setResult(window.asyncSum(aParsed, bParsed));
+  };
 
   return (
     <div className="home">
-      <form onSubmit={e => onSubmit(e)}>
+      <form onSubmit={(e) => onSubmit(e)}>
         <input ref={aValue} id="valuea" />
         <input ref={bValue} id="valueb" />
         <button type="submit">Calcular</button>
@@ -40,7 +50,7 @@ const Home = () => {
         {showRes && <div>{result}</div>}
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

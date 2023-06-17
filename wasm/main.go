@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"syscall/js"
 	"time"
@@ -9,7 +10,9 @@ import (
 var (
 	// Instanciamos el objeto global
 	// de js (window)
-	global = js.Global()
+	global    = js.Global()
+	jsErr     = js.Global().Get("Error")
+	jsPromise = js.Global().Get("Promise")
 
 	// Definimos una lista de
 	// handlers que son nuestras funciones
@@ -17,11 +20,11 @@ var (
 	functions = []function{
 		{
 			path:    "sum",
-			handler: sum,
+			handler: js.FuncOf(sum),
 		},
 		{
 			path:    "asyncSum",
-			handler: asyncSum,
+			handler: promise(asyncSum),
 		},
 	}
 )
@@ -30,8 +33,10 @@ var (
 // que posee la propiedad path y handler
 type function struct {
 	path    string
-	handler func(js.Value, []js.Value) interface{}
+	handler js.Func
 }
+
+type asyncFunction func(this js.Value, args []js.Value) (any, error)
 
 // La funcion New añade al
 // objeto Global de javascript
@@ -40,10 +45,41 @@ type function struct {
 // actualizado
 func newGlobal() *js.Value {
 	for _, fn := range functions {
-		global.Set(fn.path, js.FuncOf(fn.handler))
+		global.Set(fn.path, fn.handler)
 	}
 
 	return &global
+}
+
+// Promise - Encapsulador de promesa
+// La siguiente funcion tiene la tarea de comportarse como lo
+// haría una promesa en JavaScript, lo que emulara el
+// comportamiento retornando una promesa
+func promise(callback asyncFunction) js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) any {
+		handler := js.FuncOf(func(_ js.Value, promFn []js.Value) any {
+			resolve, reject := promFn[0], promFn[1]
+
+			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						reject.Invoke(jsErr.New(fmt.Sprint("panic:", r)))
+					}
+				}()
+
+				res, err := callback(this, args)
+				if err != nil {
+					reject.Invoke(jsErr.New(err.Error()))
+				} else {
+					resolve.Invoke(res)
+				}
+			}()
+
+			return nil
+		})
+
+		return jsPromise.New(handler)
+	})
 }
 
 // Funcion manejadora Sum
@@ -60,10 +96,15 @@ func sum(this js.Value, args []js.Value) interface{} {
 }
 
 // Funcion manejadora AsyncSum
-func asyncSum(this js.Value, args []js.Value) interface{} {
+// A diferencia de Sum, AsyncSum retorna dos valores
+// emulando una respuesta correcta y un error, que es
+// lo que esperaríamos normalmente en una promesa de JS.
+// Esta funcion sera llamada dentro de nuestro
+// encapsulador
+func asyncSum(this js.Value, args []js.Value) (interface{}, error) {
 	fmt.Println("Running: AsyncSum")
 	if len(args) < 2 {
-		return "There must be at least 2 arguments"
+		return nil, errors.New("There must be at least 2 arguments")
 	}
 
 	aValue := args[0].Int()
@@ -71,7 +112,7 @@ func asyncSum(this js.Value, args []js.Value) interface{} {
 
 	time.Sleep(3 * time.Second)
 
-	return aValue + bValue
+	return aValue + bValue, nil
 }
 
 // Llamamos la funcion main
